@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coding Quest Pro - 700 Challenge Engine</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #070a12;
+            --card-bg: rgba(18, 26, 43, 0.8);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --accent: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --correct: #10b981;
+            --correct-bg: rgba(16, 185, 129, 0.18);
+            --correct-border: rgba(16, 185, 129, 0.5);
+            --wrong: #f43f5e;
+            --wrong-bg: rgba(244, 63, 94, 0.18);
+            --wrong-border: rgba(244, 63, 94, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Prompt', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: var(--bg-dark);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-main);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Particle Canvas Background */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 800px;
+            z-index: 1;
+            position: relative;
+        }
+
+        /* Glassmorphic Container */
+        .quiz-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(99, 102, 241, 0.15);
+            padding: 36px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Top Header Navigation */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.15em;
+            background: linear-gradient(135deg, #a5b4fc, #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.1em;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        select {
+            appearance: none;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-main);
+            padding: 10px 38px 10px 16px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        select:hover, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .select-wrapper::after {
+            content: '▾';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        /* Status & Progress */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .badge-unit {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            color: #a5b4fc;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.82em;
+            font-weight: 500;
+        }
+
+        .count-text {
+            font-size: 0.88em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #38bdf8);
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Question & Editor Window */
+        .question-text {
+            font-size: 1.18em;
+            font-weight: 600;
+            line-height: 1.6;
+            color: #f1f5f9;
+            margin-bottom: 18px;
+        }
+
+        .code-window {
+            background: #0b0e14;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.6);
+        }
+
+        .code-header {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .mac-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .mac-dot.red { background: #ff5f56; }
+        .mac-dot.yellow { background: #ffbd2e; }
+        .mac-dot.green { background: #27c93f; }
+
+        .code-block {
+            padding: 18px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.92em;
+            color: #38bdf8;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.5;
+        }
+
+        /* Options */
+        .options-grid {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 14px 18px;
+            border-radius: 14px;
+            text-align: left;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .option-prefix {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            font-weight: 700;
+            color: var(--text-muted);
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: rgba(99, 102, 241, 0.12);
+            border-color: rgba(99, 102, 241, 0.45);
+            transform: translateY(-2px);
+        }
+
+        .option-btn:hover:not(:disabled) .option-prefix {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .option-btn.selected {
+            background: rgba(99, 102, 241, 0.22);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        .option-btn.selected .option-prefix {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .option-btn.correct-ans {
+            background: var(--correct-bg) !important;
+            border-color: var(--correct-border) !important;
+            color: #34d399 !important;
+        }
+
+        .option-btn.correct-ans .option-prefix {
+            background: var(--correct) !important;
+            color: #fff !important;
+        }
+
+        .option-btn.wrong-ans {
+            background: var(--wrong-bg) !important;
+            border-color: var(--wrong-border) !important;
+            color: #f87171 !important;
+        }
+
+        .option-btn.wrong-ans .option-prefix {
+            background: var(--wrong) !important;
+            color: #fff !important;
+        }
+
+        /* Feedback Box */
+        .feedback-box {
+            padding: 16px 20px;
+            border-radius: 14px;
+            margin-bottom: 24px;
+            display: none;
+            font-size: 0.92em;
+            line-height: 1.6;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .feedback-box.show-correct {
+            display: block;
+            background: var(--correct-bg);
+            border: 1px solid var(--correct-border);
+            color: #6ee7b7;
+        }
+
+        .feedback-box.show-wrong {
+            display: block;
+            background: var(--wrong-bg);
+            border: 1px solid var(--wrong-border);
+            color: #fca5a5;
+        }
+
+        /* Controls */
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-reset {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.88em;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-reset:hover {
+            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 14px;
+            font-size: 0.98em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--primary-glow);
+        }
+
+        .btn-primary:disabled {
+            background: #334155;
+            color: #64748b;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* Results & Certificate Screen */
+        .summary-card {
+            text-align: center;
+            padding: 10px 0;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .score-ring {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(15, 23, 42, 0.85) 60%, transparent 60%),
+                        linear-gradient(135deg, #6366f1 0%, #38bdf8 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+            box-shadow: 0 0 35px var(--primary-glow);
+            border: 4px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .score-num {
+            font-size: 2.6em;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .score-total {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Question Grid Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: #0f172a;
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+            gap: 8px;
+        }
+
+        .grid-num-btn {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid-num-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+        .grid-num-btn.active { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }
+        .grid-num-btn.done-correct { background: var(--correct); color: #fff; border: none; }
+        .grid-num-btn.done-wrong { background: var(--wrong); color: #fff; border: none; }
+
+        /* Print / Certificate Style */
+        @media print {
+            body { background: #fff; color: #000; }
+            .quiz-card { box-shadow: none; border: 2px solid #000; background: #fff; color: #000; }
+            .no-print { display: none !important; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 640px) {
+            .quiz-card { padding: 22px; border-radius: 20px; }
+            .question-text { font-size: 1.05em; }
+            .app-header { flex-direction: column; align-items: flex-start; }
+            .header-actions { width: 100%; justify-content: space-between; }
+            .select-wrapper { width: 100%; }
+            select { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="main-wrapper">
+    <div class="quiz-card">
+        <!-- App Header Nav -->
+        <div class="app-header no-print">
+            <div class="brand-logo">
+                <span style="font-size: 1.3em;">⚡</span> CODING QUEST PRO
+            </div>
+            <div class="header-actions">
+                <div class="select-wrapper">
+                    <select id="language-select" onchange="changeLanguage(this.value)">
+                        <option value="java">☕ Java (100 ข้อ)</option>
+                        <option value="javascript">💛 JavaScript (100 ข้อ)</option>
+                        <option value="csharp">🔷 C# (100 ข้อ)</option>
+                        <option value="python">🐍 Python (100 ข้อ)</option>
+                        <option value="c">⚡ ภาษา C (100 ข้อ)</option>
+                        <option value="cpp">🚀 C++ (100 ข้อ)</option>
+                        <option value="asm">⚙️ Assembly x86 (100 ข้อ)</option>
+                    </select>
+                </div>
+                <button class="icon-btn" onclick="toggleMapModal()" title="ผังข้อสอบ (Question Map)">🗺️</button>
+                <button class="icon-btn" id="sound-btn" onclick="toggleSound()" title="เปิด/ปิด เสียง">🔊</button>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen">
+            <div class="status-bar">
+                <span id="chapter-title" class="badge-unit">หน่วยที่ 1</span>
+                <span id="question-count" class="count-text">ข้อที่ 1/100</span>
+            </div>
+
+            <div class="progress-track">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+
+            <div id="question-text" class="question-text">กำลังโหลดโจทย์...</div>
+
+            <!-- IDE Code Snippet Window -->
+            <div id="code-window" class="code-window" style="display: none;">
+                <div class="code-header">
+                    <span class="mac-dot red"></span>
+                    <span class="mac-dot yellow"></span>
+                    <span class="mac-dot green"></span>
+                </div>
+                <pre id="code-snippet" class="code-block"></pre>
+            </div>
+
+            <div id="options-container" class="options-grid"></div>
+            <div id="feedback-box" class="feedback-box"></div>
+
+            <div class="footer-controls no-print">
+                <button class="btn-reset" onclick="resetCurrentLangProgress()">↺ รีเซ็ตวิชานี้</button>
+                <button id="action-btn" class="btn-primary" onclick="submitAnswer()">ส่งคำตอบ</button>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="summary-card" style="display: none;">
+            <h2 style="font-size: 1.6em; font-weight: 700; color: #fff;">🎉 ทำครบ 100 ข้อเรียบร้อย!</h2>
+            <p style="margin-top: 6px; color: var(--text-muted);" id="result-lang-title">สรุปผลการเรียนรู้</p>
+            
+            <div class="score-ring">
+                <div class="score-num" id="final-score">0</div>
+                <div class="score-total">/ 100 คะแนน</div>
+            </div>
+
+            <p id="score-comment" style="font-size: 1.05em; color: #e2e8f0; margin-bottom: 24px; padding: 0 10px;"></p>
+            
+            <div class="no-print" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn-primary" onclick="restartQuiz()">เริ่มทำวิชานี้ใหม่อีกครั้ง</button>
+                <button class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="window.print()">🖨️ พิมพ์เกียรติบัตร / บันทึก PDF</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Question Map Grid -->
+<div id="map-modal" class="modal-overlay" onclick="if(event.target===this) toggleMapModal()">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span>🗺️ ผังข้อสอบทั้งหมด (1-100)</span>
+            <button class="icon-btn" onclick="toggleMapModal()">✕</button>
+        </div>
+        <div class="modal-body" id="grid-modal-body"></div>
+    </div>
+</div>
+
+<script>
+    // โครงสร้างหน่วยการเรียนรู้ (5 หน่วย x 7 ภาษา = 700 ข้อ)
+    const unitsMap = {
+        java: [
+            "หน่วยที่ 1: พื้นฐานการแสดงผล (Output & Syntax)",
+            "หน่วยที่ 2: ตัวแปรและการคำนวณ (Variables & Math)",
+            "หน่วยที่ 3: เงื่อนไขและการตัดสินใจ (If-Else Logic)",
+            "หน่วยที่ 4: การวนซ้ำทำซ้ำ (For & While Loops)",
+            "หน่วยที่ 5: ฟังก์ชันและอาร์เรย์ (Methods & Arrays)"
+        ],
+        javascript: [
+            "หน่วยที่ 1: การแสดงผลและไวยากรณ์ (console.log & Syntax)",
+            "หน่วยที่ 2: ตัวแปรและการคำนวณ (let/const & Operators)",
+            "หน่วยที่ 3: เงื่อนไขและการเปรียบเทียบ (Strict Equality & If-Else)",
+            "หน่วยที่ 4: ฟังก์ชันและแอร์โรว์ฟังก์ชัน (Functions & Arrow)",
+            "หน่วยที่ 5: อาร์เรย์และอ็อบเจกต์ (Arrays, Map & Objects)"
+        ],
+        csharp: [
+            "หน่วยที่ 1: การรับส่งข้อมูลพื้นฐาน (Console.WriteLine & Syntax)",
+            "หน่วยที่ 2: ชนิดข้อมูลและการคำนวณ (Data Types & Math)",
+            "หน่วยที่ 3: การควบคุมทิศทาง (If-Else & Switch)",
+            "หน่วยที่ 4: ลูปและคอลเลกชัน (Loops & List<T>)",
+            "หน่วยที่ 5: คลาสและคุณสมบัติ (Classes & Properties)"
+        ],
+        python: [
+            "หน่วยที่ 1: การพิมพ์ข้อความ (Print & Strings)",
+            "หน่วยที่ 2: ตัวแปรและการคำนวณ (Variables & Operators)",
+            "หน่วยที่ 3: การตัดสินใจ (If-Elif-Else)",
+            "หน่วยที่ 4: ลิสต์และการวนซ้ำ (Lists & For Loops)",
+            "หน่วยที่ 5: ฟังก์ชันและดิกชันนารี (Functions & Dict)"
+        ],
+        c: [
+            "หน่วยที่ 1: การพิมพ์ข้อความ (printf & Structure)",
+            "หน่วยที่ 2: ตัวแปรและการรับค่า (Variables & scanf)",
+            "หน่วยที่ 3: การควบคุมทิศทาง (If-Else & Switch)",
+            "หน่วยที่ 4: การวนรอบ (For & While Loops)",
+            "หน่วยที่ 5: พอยน์เตอร์และอาร์เรย์ (Pointers & Memory)"
+        ],
+        cpp: [
+            "หน่วยที่ 1: การรับส่งข้อมูล (cin & cout)",
+            "หน่วยที่ 2: ตัวแปรและการคำนวณ (Data Types & Math)",
+            "หน่วยที่ 3: เงื่อนไขและการวนซ้ำ (Control Flow)",
+            "หน่วยที่ 4: ฟังก์ชันและเวกเตอร์ (Functions & Vector)",
+            "หน่วยที่ 5: คลาสและวัตถุ (Classes & Objects)"
+        ],
+        asm: [
+            "หน่วยที่ 1: เรจิสเตอร์และการย้ายข้อมูล (Registers & MOV)",
+            "หน่วยที่ 2: การคำนวณคณิตศาสตร์ (ADD, SUB, INC)",
+            "หน่วยที่ 3: การเปรียบเทียบและการกระโดด (CMP, JMP, JE)",
+            "หน่วยที่ 4: สแตกและการจัดเก็บข้อมูล (STACK, PUSH, POP)",
+            "หน่วยที่ 5: โครงสร้างโปรแกรมและโหมดหน่วยความจำ (Memory & Calls)"
+        ]
+    };
+
+    let currentLang = 'java';
+    let currentIndex = 0;
+    let score = 0;
+    let selectedOption = null;
+    let isAnswered = false;
+    let soundEnabled = true;
+    let userAnswersMap = {}; // เก็บสถานะคำตอบของแต่ละข้อ {'0': 'correct', '1': 'wrong'}
+
+    // Web Audio Sound Generator
+    function playSound(type) {
+        if (!soundEnabled) return;
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            }
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+        } catch(e) {}
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        document.getElementById('sound-btn').innerText = soundEnabled ? '🔊' : '🔇';
+    }
+
+    function shuffleArray(arr) {
+        let res = [...arr];
+        for (let i = res.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [res[i], res[j]] = [res[j], res[i]];
+        }
+        return res;
+    }
+
+    // Engine สร้างโจทย์ Dynamic 700 ข้อ
+    function generateQuestion(lang, index) {
+        const unitIndex = Math.min(Math.floor(index / 20), 4);
+        const unitName = unitsMap[lang][unitIndex];
+        const num1 = (index % 10) + 2;
+        const num2 = (index % 5) + 1;
+
+        let q = { chapter: unitName, question: "", code: null, options: [], answer: "", explanation: "" };
+
+        if (lang === 'java') {
+            if (unitIndex === 0) {
+                q.question = `[ข้อที่ ${index+1}] คำสั่ง Java ในการแสดงผลข้อความออกทางหน้าจอคือคำสั่งใด?`;
+                q.code = `System.out.println("Hello ${index+1}");`;
+                q.options = [`System.out.println("Hello ${index+1}");`, `print("Hello ${index+1}");`, `Console.write("Hello ${index+1}");`, `printf("Hello ${index+1}");`];
+                q.answer = q.options[0];
+                q.explanation = "Java ใช้คำสั่ง System.out.println(...) ในการพิมพ์ข้อความพร้อมขึ้นบรรทัดใหม่";
+            } else if (unitIndex === 1) {
+                const total = num1 + num2;
+                q.question = `[ข้อที่ ${index+1}] โค้ดคำนวณตัวเลขต่อไปนี้ จะให้ผลลัพธ์บนหน้าจอเท่าใด?`;
+                q.code = `int a = ${num1};\nint b = ${num2};\nSystem.out.println(a + b);`;
+                q.options = [`${total}`, `${num1 * num2}`, `${num1}${num2}`, `${total + 1}`];
+                q.answer = `${total}`;
+                q.explanation = `นำค่าตัวแปร a (${num1}) บวกกับ b (${num2}) ได้ผลลัพธ์เป็น ${total}`;
+            } else if (unitIndex === 2) {
+                const isGreater = num1 > num2;
+                q.question = `[ข้อที่ ${index+1}] จากเงื่อนไขต่อไปนี้ หน้าจอจะแสดงคำว่าอะไร?`;
+                q.code = `int x = ${num1};\nint y = ${num2};\nif (x > y) {\n    System.out.println("YES");\n} else {\n    System.out.println("NO");\n}`;
+                q.options = isGreater ? ["YES", "NO", "Error", "1"] : ["NO", "YES", "Error", "0"];
+                q.answer = isGreater ? "YES" : "NO";
+                q.explanation = `เปรียบเทียบค่า x (${num1}) > y (${num2}) ผลลัพธ์เงื่อนไขคือ ${isGreater}`;
+            } else if (unitIndex === 3) {
+                q.question = `[ข้อที่ ${index+1}] โค้ดการวนซ้ำ for loop ต่อไปนี้จะทำงานพิมพ์ข้อความกี่รอบ?`;
+                q.code = `for (int i = 1; i <= ${num1}; i++) {\n    System.out.println("Loop");\n}`;
+                q.options = [`${num1} รอบ`, `${num1-1} รอบ`, `${num1+1} รอบ`, "0 รอบ"];
+                q.answer = `${num1} รอบ`;
+                q.explanation = `i เริ่มที่ 1 ถึง ${num1} รวมทำงานทั้งหมด ${num1} รอบพอดี`;
+            } else {
+                q.question = `[ข้อที่ ${index+1}] โค้ดฟังก์ชัน Java ต่อไปนี้ จะคืนค่า (return) ตัวเลขใด?`;
+                q.code = `static int add() {\n    return ${num1} * ${num2};\n}`;
+                q.options = [`${num1 * num2}`, `${num1 + num2}`, `${num1}`, `${num2}`];
+                q.answer = `${num1 * num2}`;
+                q.explanation = `ฟังก์ชันส่งคืนค่าผลคูณของ ${num1} * ${num2} = ${num1 * num2}`;
+            }
+        } 
+        else if (lang === 'javascript') {
+            if (unitIndex === 0) {
+                q.question = `[ข้อที่ ${index+1}] คำสั่งมาตรฐานใน JavaScript ที่ใช้พิมพ์ข้อมูลลงใน Console คือข้อใด?`;
+                q.code = `console.log("Hello JS ${index+1}");`;
+                q.options = [`console.log("Hello JS ${index+1}");`, `print.out("Hello JS ${index+1}");`, `Console.WriteLine("Hello JS ${index+1}");`, `echo("Hello JS ${index+1}");`];
+                q.answer = q.options[0];
+                q.explanation = "JavaScript ใช้ console.log(...) สำหรับการพิมพ์ข้อความหรือ Debug ข้อมูล";
+            } else if (unitIndex === 1) {
+                q.question = `[ข้อที่ ${index+1}] การประกาศตัวแปรที่ไม่ต้องการให้เปลี่ยนค่าได้อีก (ค่าคงที่) ใน JS ใช้คีย์เวิร์ดใด?`;
+                q.code = `const age = ${num1 * 5};\nlet name = "JS";`;
+                q.options = ["const", "let", "var", "static"];
+                q.answer = "const";
+                q.explanation = "const ใช้ประกาศตัวแปรแบบอ่านได้อย่างเดียว ไม่สามารถ re-assign ค่าใหม่ได้";
+            } else if (unitIndex === 2) {
+                q.question = `[ข้อที่ ${index+1}] เครื่องหมายการเปรียบเทียบแบบ Strict Equality ใน JS คือข้อใด?`;
+                q.code = `if (${num1} === "${num1}") { ... }`;
+                q.options = ["===", "==", "=", "equals()"];
+                q.answer = "===";
+                q.explanation = "=== ตรวจสอบทั้งค่าและชนิดข้อมูล (Data Type)";
+            } else if (unitIndex === 3) {
+                const res = num1 * num2;
+                q.question = `[ข้อที่ ${index+1}] ผลลัพธ์ของการเรียกใช้ Arrow Function นี้คือเท่าใด?`;
+                q.code = `const multiply = (a, b) => a * b;\nconsole.log(multiply(${num1}, ${num2}));`;
+                q.options = [`${res}`, `${num1 + num2}`, `${num1}`, `${num2}`];
+                q.answer = `${res}`;
+                q.explanation = `Arrow Function คืนค่าผลคูณของ ${num1} * ${num2} ได้คำตอบคือ ${res}`;
+            } else {
+                q.question = `[ข้อที่ ${index+1}] การดึงค่าจาก Property ของ Object ใน JavaScript ต่อไปนี้จะได้คำตอบใด?`;
+                q.code = `const user = { name: "Dev", score: ${num1 * 10} };\nconsole.log(user.score);`;
+                q.options = [`${num1 * 10}`, "Dev", "undefined", "score"];
+                q.answer = `${num1 * 10}`;
+                q.explanation = "เข้าถึง Property ด้วย Dot Notation (user.score) ได้ค่าเป็น " + (num1 * 10);
+            }
+        }
+        else if (lang === 'csharp') {
+            if (unitIndex === 0) {
+                q.question = `[ข้อที่ ${index+1}] คำสั่งภาษา C# สำหรับแสดงผลข้อความออกทางคอนโซลคือข้อใด?`;
+                q.code = `Console.WriteLine("Hello C# ${index+1}");`;
+                q.options = [`Console.WriteLine("Hello C# ${index+1}");`, `System.out.println("Hello C# ${index+1}");`, `console.log("Hello C# ${index+1}");`, `printf("Hello C# ${index+1}");`];
+                q.answer = q.options[0];
+                q.explanation = "C# ใช้คลาส Console และเมธอด WriteLine(...) ในการแสดงผล";
+            } else if (unitIndex === 1) {
+                const total = num1 + num2;
+                q.question = `[ข้อที่ ${index+1}] ผลลัพธ์จากการบวกตัวแปรในภาษา C# ต่อไปนี้คือเท่าใด?`;
+                q.code = `int x = ${num1};\nint y = ${num2};\nConsole.WriteLine(x + y);`;
+                q.options = [`${total}`, `${num1 * num2}`, `${num1}${num2}`, `${total + 2}`];
+                q.answer = `${total}`;
+                q.explanation = `ตัวแปรชนิด int นำ ${num1} + ${num2} ได้ผลลัพธ์เป็น ${total}`;
+            } else if (unitIndex === 2) {
+                q.question = `[ข้อที่ ${index+1}] จากเงื่อนไข ternary operator ต่อไปนี้ ตัวแปร status จะเก็บค่าอะไร?`;
+                q.code = `int score = ${num1 * 10};\nstring status = (score >= 50) ? "PASS" : "FAIL";`;
+                const pass = (num1 * 10) >= 50;
+                q.options = pass ? ["PASS", "FAIL", "True", "False"] : ["FAIL", "PASS", "True", "False"];
+                q.answer = pass ? "PASS" : "FAIL";
+                q.explanation = `คะแนน ${num1 * 10} ${pass ? ">= 50 ได้ค่า 'PASS'" : "< 50 ได้ค่า 'FAIL'"}`;
+            } else if (unitIndex === 3) {
+                q.question = `[ข้อที่ ${index+1}] การดึงนับจำนวนสมาชิกใน List<T> ของภาษา C# ใช้ Property ใด?`;
+                q.code = `List<int> numbers = new List<int> { ${num1}, ${num2} };\nConsole.WriteLine(numbers.Count);`;
+                q.options = ["Count", "Length", "Size()", "Count()"];
+                q.answer = "Count";
+                q.explanation = "List<T> ใน C# ใช้ Property .Count ในการดึงจำนวนสมาชิก";
+            } else {
+                q.question = `[ข้อที่ ${index+1}] โครงสร้างการประกาศ Auto-Property ใน C# ข้อใดถูกต้อง?`;
+                q.code = `public class Car {\n    public int Speed { get; set; }\n}`;
+                q.options = [`public int Speed { get; set; }`, `public int Speed get set;`, `var Speed = property();`, `int Speed = { get; set; }`];
+                q.answer = `public int Speed { get; set; }`;
+                q.explanation = "C# ใช้รูปแบบ { get; set; } สำหรับ Auto-Property";
+            }
+        }
+        else if (lang === 'python') {
+            if (unitIndex === 0) {
+                q.question = `[ข้อที่ ${index+1}] คำสั่งแสดงผลข้อความในภาษา Python คือข้อใด?`;
+                q.code = `print("Welcome ${index+1}")`;
+                q.options = [`print("Welcome ${index+1}")`, `System.out.print("Welcome ${index+1}")`, `cout << "Welcome ${index+1}";`, `printf("Welcome ${index+1}");`];
+                q.answer = q.options[0];
+                q.explanation = "Python ใช้คำสั่ง print(...) สั้นกระชับ";
+            } else if (unitIndex === 1) {
+                const res = num1 * num2;
+                q.question = `[ข้อที่ ${index+1}] ตัวแปรคณิตศาสตร์ใน Python ข้อนี้จะได้ค่าเท่าใด?`;
+                q.code = `x = ${num1}\ny = ${num2}\nprint(x * y)`;
+                q.options = [`${res}`, `${num1 + num2}`, `${num1 ** num2}`, `${res + 2}`];
+                q.answer = `${res}`;
+                q.explanation = `เครื่องหมาย * คือการคูณ นำ ${num1} * ${num2} ได้ ${res}`;
+            } else if (unitIndex === 2) {
+                q.question = `[ข้อที่ ${index+1}] ผลลัพธ์ของเงื่อนไข if-else ใน Python นี้คืออะไร?`;
+                q.code = `score = ${num1 * 10}\nif score >= 50:\n    print("PASS")\nelse:\n    print("FAIL")`;
+                const pass = (num1 * 10) >= 50;
+                q.options = pass ? ["PASS", "FAIL", "Error", "None"] : ["FAIL", "PASS", "Error", "None"];
+                q.answer = pass ? "PASS" : "FAIL";
+                q.explanation = `score มีค่า ${num1*10} ซึ่ง ${pass ? ">= 50 ผ่านเกณฑ์" : "< 50 ไม่ผ่านเกณฑ์"}`;
+            } else if (unitIndex === 3) {
+                q.question = `[ข้อที่ ${index+1}] ลิสต์ใน Python ข้อนี้มีสมาชิกทั้งหมดกี่ตัวอักษร?`;
+                q.code = `items = ["A", "B", "C", "D"]\nprint(len(items))`;
+                q.options = ["4", "3", "5", "Error"];
+                q.answer = "4";
+                q.explanation = "ฟังก์ชัน len() นำมาใช้นับจำนวนสมาชิกใน List ซึ่งมี 4 ตัว";
+            } else {
+                q.question = `[ข้อที่ ${index+1}] ฟังก์ชัน Python ต่อไปนี้จะส่งผลลัพธ์ใดออกมา?`;
+                q.code = `def my_func(a, b):\n    return a - b\n\nprint(my_func(${num1 + 5}, ${num1}))`;
+                q.options = ["5", `${num1}`, `${num1 + 5}`, "0"];
+                q.answer = "5";
+                q.explanation = `นำค่า ${num1 + 5} ลบด้วย ${num1} ผลลัพธ์คือ 5`;
+            }
+        }
+        else if (lang === 'c') {
+            if (unitIndex === 0) {
+                q.question = `[ข้อที่ ${index+1}] คำสั่งพิมพ์ข้อความพร้อมขึ้นบรรทัดใหม่ในภาษา C คือข้อใด?`;
+                q.code = `printf("C Programming\\n");`;
+                q.options = [`printf("C Programming\\n");`, `print("C Programming");`, `cout << "C Programming";`, `System.out.printf();`];
+                q.answer = q.options[0];
+                q.explanation = "ภาษา C ใช้ printf() และใส่ \\n สำหรับขึ้นบรรทัดใหม่";
+            } else if (unitIndex === 1) {
+                q.question = `[ข้อที่ ${index+1}] สัญลักษณ์ระบุชนิดข้อมูล (Format Specifier) สำหรับ int ใน printf คือข้อใด?`;
+                q.code = `int num = ${num1};\nprintf("%d", num);`;
+                q.options = ["%d", "%f", "%s", "%c"];
+                q.answer = "%d";
+                q.explanation = "%d ใช้สำหรับตัวเลขจำนวนเต็ม (int)";
+            } else if (unitIndex === 2) {
+                q.question = `[ข้อที่ ${index+1}] คำสั่งควบคุมทิศทางแบบหลายทางเลือกในภาษา C คือคำสั่งใด?`;
+                q.code = `switch(choice) {\n    case 1: printf("One"); break;\n}`;
+                q.options = ["switch-case", "if-then", "select-where", "choose-case"];
+                q.answer = "switch-case";
+                q.explanation = "คำสั่ง switch-case ใช้สำหรับตรวจสอบหลายเงื่อนไขใน C";
+            } else if (unitIndex === 3) {
+                q.question = `[ข้อที่ ${index+1}] โค้ดวนลูป while ในภาษา C ต่อไปนี้จะทำงานกี่รอบ?`;
+                q.code = `int count = 0;\nwhile(count < ${num2}) {\n    count++;\n}`;
+                q.options = [`${num2} รอบ`, `${num2+1} รอบ`, "1 รอบ", "ไม่ทำงานเลย"];
+                q.answer = `${num2} รอบ`;
+                q.explanation = `เริ่มที่ 0 และเพิ่มครั้งละ 1 จนกว่าจะเท่ากับ ${num2} ได้ ${num2} รอบพอดี`;
+            } else {
+                q.question = `[ข้อที่ ${index+1}] สัญลักษณ์ใดใช้ประกาศตัวแปร 'พอยน์เตอร์' (Pointer) ใน C?`;
+                q.code = `int *ptr;`;
+                q.options = ["*", "&", "#", "@"];
+                q.answer = "*";
+                q.explanation = "เครื่องหมาย * นำหน้าตัวแปรใช้ประกาศ Pointer";
+            }
+        }
+        else if (lang === 'cpp') {
+            if (unitIndex === 0) {
+                q.question = `[ข้อที่ ${index+1}] คำสั่งส่งออกข้อมูลทางหน้าจอมาตรฐานของ C++ คือข้อใด?`;
+                q.code = `std::cout << "Hello C++" << std::endl;`;
+                q.options = [`std::cout << ...`, `std::cin >> ...`, `Console.Write()`, `System.out.print()`];
+                q.answer = `std::cout << ...`;
+                q.explanation = "std::cout ร่วมกับเครื่องหมาย << ใช้ส่งออกข้อมูลใน C++";
+            } else if (unitIndex === 1) {
+                q.question = `[ข้อที่ ${index+1}] เครื่องหมายรับข้อมูลเข้าจากคีย์บอร์ดคู่กับ cin ใน C++ คือข้อใด?`;
+                q.code = `int x;\nstd::cin >> x;`;
+                q.options = [">>", "<<", "->", "::"];
+                q.answer = ">>";
+                q.explanation = "cin ใช้คู่กับเครื่องหมาย >> เพื่อรับค่าเข้าตัวแปร";
+            } else if (unitIndex === 2) {
+                q.question = `[ข้อที่ ${index+1}] ผลลัพธ์ของโค้ดคณิตศาสตร์ C++ ต่อไปนี้คือเท่าใด?`;
+                q.code = `int val = ${num1 * 2} / 2;\nstd::cout << val;`;
+                q.options = [`${num1}`, `${num1 * 2}`, `${num1 + 2}`, "0"];
+                q.answer = `${num1}`;
+                q.explanation = `นำ (${num1} * 2) แล้วหารด้วย 2 จะได้ค่าเป็น ${num1}`;
+            } else if (unitIndex === 3) {
+                q.question = `[ข้อที่ ${index+1}] โครงสร้างข้อมูลแบบยืดหยุ่นปรับขนาดได้ใน C++ STL คือข้อใด?`;
+                q.code = `std::vector<int> numbers;`;
+                q.options = ["std::vector", "std::array_static", "std::list_fixed", "std::stack_only"];
+                q.answer = "std::vector";
+                q.explanation = "std::vector คือ Dynamic Array ใน C++ STL";
+            } else {
+                q.question = `[ข้อที่ ${index+1}] ในการเขียน OOP ภาษา C++ คำสำคัญที่ใช้สร้างคลาสคือคำว่าอะไร?`;
+                q.code = `class Student {\npublic:\n    string name;\n};`;
+                q.options = ["class", "struct_oop", "object_template", "define"];
+                q.answer = "class";
+                q.explanation = "C++ ใช้คำสำคัญ class ในการสร้างคลาสเชิงวัตถุ";
+            }
+        }
+        else if (lang === 'asm') {
+            if (unitIndex === 0) {
+                q.question = `[ข้อที่ ${index+1}] คำสั่ง Assembly x86 ใดใช้สำหรับ 'ย้าย/คัดลอก' ข้อมูลใส่เรจิสเตอร์?`;
+                q.code = `MOV EAX, ${num1}`;
+                q.options = ["MOV", "ADD", "PUSH", "JMP"];
+                q.answer = "MOV";
+                q.explanation = "MOV (Move) ใช้คัดลอกข้อมูลจาก Source ไปยัง Destination Register";
+            } else if (unitIndex === 1) {
+                const total = num1 + num2;
+                q.question = `[ข้อที่ ${index+1}] หลังจากรันคำสั่ง ADD ต่อไปนี้ เรจิสเตอร์ EAX จะมีค่าเท่าใด?`;
+                q.code = `MOV EAX, ${num1}\nADD EAX, ${num2}`;
+                q.options = [`${total}`, `${num1}`, `${num2}`, "0"];
+                q.answer = `${total}`;
+                q.explanation = `คำสั่ง ADD นำค่า EAX (${num1}) + ${num2} ได้ผลลัพธ์เป็น ${total}`;
+            } else if (unitIndex === 2) {
+                q.question = `[ข้อที่ ${index+1}] คำสั่งกระโดดเมื่อผลการเปรียบเทียบเท่ากัน (Jump if Equal) คือข้อใด?`;
+                q.code = `CMP EAX, EBX\nJE target_label`;
+                q.options = ["JE", "JNE", "JMP", "JLE"];
+                q.answer = "JE";
+                q.explanation = "JE (Jump if Equal) กระโดดไปฉลากเป้าหมายถ้าเปรียบเทียบแล้วเท่ากัน";
+            } else if (unitIndex === 3) {
+                q.question = `[ข้อที่ ${index+1}] คำสั่งใส่ข้อมูลลงในสแตก (Stack) ของ Assembly คือข้อใด?`;
+                q.code = `PUSH EAX\nPOP EBX`;
+                q.options = ["PUSH", "POP", "PUT", "STORE"];
+                q.answer = "PUSH";
+                q.explanation = "PUSH ใช้ใส่ข้อมูลลงสแตก ส่วน POP ใช้ดึงข้อมูลออกจากสแตก";
+            } else {
+                q.question = `[ข้อที่ ${index+1}] คำสั่งเรียกใช้งานฟังก์ชัน/ซับรูทีนใน Assembly x86 คือข้อใด?`;
+                q.code = `CALL my_function\nRET`;
+                q.options = ["CALL", "RUN", "GOTO", "INVOKE"];
+                q.answer = "CALL";
+                q.explanation = "CALL ใช้เรียกซับรูทีน และใช้ RET เพื่อกลับมาทำงานต่อ";
+            }
+        }
+
+        return q;
+    }
+
+    function loadState() {
+        const savedIndex = localStorage.getItem(`quiz_${currentLang}_index`);
+        const savedScore = localStorage.getItem(`quiz_${currentLang}_score`);
+        const savedAnswers = localStorage.getItem(`quiz_${currentLang}_answers`);
+
+        currentIndex = savedIndex ? parseInt(savedIndex) : 0;
+        score = savedScore ? parseInt(savedScore) : 0;
+        userAnswersMap = savedAnswers ? JSON.parse(savedAnswers) : {};
+    }
+
+    function saveState() {
+        localStorage.setItem(`quiz_${currentLang}_index`, currentIndex);
+        localStorage.setItem(`quiz_${currentLang}_score`, score);
+        localStorage.setItem(`quiz_${currentLang}_answers`, JSON.stringify(userAnswersMap));
+    }
+
+    function changeLanguage(langKey) {
+        currentLang = langKey;
+        loadState();
+
+        if (currentIndex >= 100) {
+            showResults();
+        } else {
+            document.getElementById('quiz-screen').style.display = 'block';
+            document.getElementById('result-screen').style.display = 'none';
+            renderQuestion();
+        }
+    }
+
+    function renderQuestion() {
+        isAnswered = false;
+        selectedOption = null;
+
+        const q = generateQuestion(currentLang, currentIndex);
+
+        document.getElementById('chapter-title').innerText = q.chapter;
+        document.getElementById('question-count').innerText = `ข้อที่ ${currentIndex + 1}/100`;
+        document.getElementById('progress-fill').style.width = `${((currentIndex + 1) / 100) * 100}%`;
+        document.getElementById('question-text').innerText = q.question;
+
+        const codeWin = document.getElementById('code-window');
+        const codeElem = document.getElementById('code-snippet');
+        if (q.code) {
+            codeElem.innerText = q.code;
+            codeWin.style.display = 'block';
+        } else {
+            codeWin.style.display = 'none';
+        }
+
+        const shuffledOptions = shuffleArray(q.options);
+        const optionsContainer = document.getElementById('options-container');
+        optionsContainer.innerHTML = '';
+        const prefixes = ['A', 'B', 'C', 'D'];
+
+        shuffledOptions.forEach((optText, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerHTML = `<span class="option-prefix">${prefixes[idx]}</span> <span>${escapeHtml(optText)}</span>`;
+            btn.onclick = () => selectOption(btn, optText);
+            optionsContainer.appendChild(btn);
+        });
+
+        const actionBtn = document.getElementById('action-btn');
+        actionBtn.innerText = 'ส่งคำตอบ';
+        actionBtn.disabled = true;
+        actionBtn.onclick = submitAnswer;
+
+        const feedbackBox = document.getElementById('feedback-box');
+        feedbackBox.style.display = 'none';
+        feedbackBox.className = 'feedback-box';
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function selectOption(btn, text) {
+        if (isAnswered) return;
+        document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedOption = text;
+        document.getElementById('action-btn').disabled = false;
+    }
+
+    function submitAnswer() {
+        if (isAnswered || selectedOption === null) return;
+
+        isAnswered = true;
+        const q = generateQuestion(currentLang, currentIndex);
+        const isCorrect = (selectedOption === q.answer);
+
+        const buttons = document.querySelectorAll('.option-btn');
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            const btnText = btn.querySelector('span:last-child').innerText;
+            if (btnText === q.answer) btn.classList.add('correct-ans');
+            if (btnText === selectedOption && !isCorrect) btn.classList.add('wrong-ans');
+        });
+
+        const feedbackBox = document.getElementById('feedback-box');
+        if (isCorrect) {
+            score++;
+            userAnswersMap[currentIndex] = 'correct';
+            playSound('correct');
+            feedbackBox.className = 'feedback-box show-correct';
+            feedbackBox.innerHTML = `<strong>✨ ถูกต้องครับ!</strong><br>${q.explanation}`;
+        } else {
+            userAnswersMap[currentIndex] = 'wrong';
+            playSound('wrong');
+            feedbackBox.className = 'feedback-box show-wrong';
+            feedbackBox.innerHTML = `<strong>❌ คำตอบยังไม่ถูกต้อง</strong><br>${q.explanation}`;
+        }
+
+        const actionBtn = document.getElementById('action-btn');
+        actionBtn.innerText = 'ข้อถัดไป ➔';
+        actionBtn.onclick = nextQuestion;
+
+        saveState();
+    }
+
+    function nextQuestion() {
+        currentIndex++;
+        saveState();
+
+        if (currentIndex < 100) {
+            renderQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+
+        const langName = document.getElementById('language-select').options[document.getElementById('language-select').selectedIndex].text;
+        document.getElementById('result-lang-title').innerText = `สรุปผลการทำแบบฝึกหัด ${langName}`;
+        document.getElementById('final-score').innerText = score;
+
+        const comment = document.getElementById('score-comment');
+        if (score >= 80) {
+            comment.innerText = "🏆 ยอดเยี่ยมระดับเซียน! คุณผ่านเกณฑ์ทดสอบด้วยคะแนนระดับสูงมาก";
+            triggerConfetti();
+        } else if (score >= 50) {
+            comment.innerText = "👍 ทำได้ดีมากครับ! ผ่านเกณฑ์มาตรฐาน สามารถเรียนรู้เพิ่มเติมเพื่อเพิ่มความชำนาญ";
+        } else {
+            comment.innerText = "💪 พยายามได้ดีครับ! ลองฝึกทบทวนซ้ำอีกครั้งเพื่อเพิ่มความมั่นใจนะครับ";
+        }
+    }
+
+    function restartQuiz() {
+        currentIndex = 0;
+        score = 0;
+        userAnswersMap = {};
+        saveState();
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'block';
+        renderQuestion();
+    }
+
+    function resetCurrentLangProgress() {
+        if (confirm('คุณต้องการรีเซ็ตและเริ่มทำโจทย์วิชานี้ใหม่ตั้งแต่ข้อ 1 ใช่หรือไม่?')) {
+            restartQuiz();
+        }
+    }
+
+    // Modal Question Map Grid
+    function toggleMapModal() {
+        const modal = document.getElementById('map-modal');
+        if (modal.style.display === 'flex') {
+            modal.style.display = 'none';
+        } else {
+            renderMapGrid();
+            modal.style.display = 'flex';
+        }
+    }
+
+    function renderMapGrid() {
+        const body = document.getElementById('grid-modal-body');
+        body.innerHTML = '';
+        for (let i = 0; i < 100; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'grid-num-btn';
+            btn.innerText = i + 1;
+            
+            if (i === currentIndex) btn.classList.add('active');
+            if (userAnswersMap[i] === 'correct') btn.classList.add('done-correct');
+            if (userAnswersMap[i] === 'wrong') btn.classList.add('done-wrong');
+
+            btn.onclick = () => {
+                currentIndex = i;
+                saveState();
+                toggleMapModal();
+                if (document.getElementById('result-screen').style.display === 'block') {
+                    document.getElementById('result-screen').style.display = 'none';
+                    document.getElementById('quiz-screen').style.display = 'block';
+                }
+                renderQuestion();
+            };
+            body.appendChild(btn);
+        }
+    }
+
+    // Canvas Background Particles Effect
+    function initCanvasBackground() {
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const particles = Array.from({ length: 45 }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: Math.random() * 2 + 1,
+            dx: (Math.random() - 0.5) * 0.6,
+            dy: (Math.random() - 0.5) * 0.6,
+            alpha: Math.random() * 0.5 + 0.2
+        }));
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => {
+                p.x += p.dx;
+                p.y += p.dy;
+                if (p.x < 0 || p.x > width) p.dx *= -1;
+                if (p.y < 0 || p.y > height) p.dy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(99, 102, 241, ${p.alpha})`;
+                ctx.fill();
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    // Simple Particle Confetti
+    function triggerConfetti() {
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        const colors = ['#6366f1', '#38bdf8', '#10b981', '#f43f5e', '#eab308'];
+        const confetti = Array.from({ length: 80 }, () => ({
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: (Math.random() - 0.5) * 12,
+            vy: (Math.random() - 0.7) * 14,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            size: Math.random() * 6 + 4,
+            life: 100
+        }));
+
+        function animateConfetti() {
+            ctx.save();
+            confetti.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.2; // Gravity
+                p.life -= 1;
+
+                if (p.life > 0) {
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                }
+            });
+            ctx.restore();
+            if (confetti.some(p => p.life > 0)) {
+                requestAnimationFrame(animateConfetti);
+            }
+        }
+        animateConfetti();
+    }
+
+    window.onload = function() {
+        initCanvasBackground();
+        loadState();
+        renderQuestion();
+    };
+</script>
+
+</body>
+</html>
